@@ -4,11 +4,11 @@ from time import sleep
 from random import random
 
 # TODO: Figure out how to properly add a version number to the document.
-# Screen settings
-SCREEN_NAME = "Particle Simulation 0.0.1"
-SCREEN_HEIGHT = 800
-SCREEN_WIDTH = 1200
-SCREEN_COLOR = "black"
+# Window settings
+WINDOW_NAME = "Particle Simulation 0.0.2"
+WINDOW_HEIGHT = 800
+WINDOW_WIDTH = 1200
+WINDOW_COLOR = "black"
 
 # Universe settings
 SIM_SPEED = 3
@@ -29,15 +29,16 @@ class Particle():
         self._prev = [0,0]
         self._vel = [0,0]
         self._graphic = Circle(Point(self._pos[0], self._pos[1]), PARTICLE_SIZE)
-        self._graphic.setFill("black")
+        self._graphic.setFill(PARTICLE_COLOR)
+        self._graphic.setOutline(PARTICLE_COLOR)
         self._drawn = False
 
     def set_velocity(self, deltaX, deltaY):
         self._vel = [deltaX, deltaY]
 
     def phys_update(self):
-        self._pos[0] = (self._pos[0] + self._vel[0]) % SCREEN_WIDTH
-        self._pos[1] = (self._pos[1] + self._vel[1]) % SCREEN_HEIGHT
+        self._pos[0] = (self._pos[0] + self._vel[0]) % WINDOW_WIDTH
+        self._pos[1] = (self._pos[1] + self._vel[1]) % WINDOW_HEIGHT
 
     def draw(self, window):
         # I was debating a lot on whether this single-use if-else statement is a good idea. It makes drawing the particles easier, but I was concerned about speed.
@@ -55,7 +56,7 @@ class Particle():
 
 def init_universe():
     for i in range(PARTICLE_COUNT):
-        newParticle = Particle(random()*SCREEN_WIDTH, random()*SCREEN_HEIGHT)
+        newParticle = Particle(random()*WINDOW_WIDTH, random()*WINDOW_HEIGHT)
         newParticle.set_velocity(rand_between(-PARTICLE_SPEED, PARTICLE_SPEED), rand_between(-PARTICLE_SPEED, PARTICLE_SPEED))
         Universe.append(newParticle)
 
@@ -76,7 +77,8 @@ def rand_between(start, end):
 def main():
     print("Generating universe...")
     init_universe()
-    window = GraphWin(SCREEN_NAME, SCREEN_WIDTH, SCREEN_HEIGHT)
+    window = GraphWin(WINDOW_NAME, WINDOW_WIDTH, WINDOW_HEIGHT)
+    window.setBackground(WINDOW_COLOR)
 
     print("Starting simulation. Press a to quit")
     global Running
