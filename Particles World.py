@@ -6,18 +6,18 @@ from random import random
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
 WINDOW_NAME = "Particle Simulation 0.0.2"
-WINDOW_HEIGHT = 800
-WINDOW_WIDTH = 1200
-WINDOW_COLOR = "black"
+WINDOW_HEIGHT = 700
+WINDOW_WIDTH = 900
+WINDOW_COLOR = "grey"
 
 # Universe settings
-SIM_SPEED = 3
+SIM_FPS = 20
 
 # Particle specific settings
-PARTICLE_COUNT = 3
-PARTICLE_SPEED = 5
-PARTICLE_SIZE = 5
-PARTICLE_COLOR = "white"
+PARTICLE_COUNT = 30
+PARTICLE_SPEED = 7
+PARTICLE_SIZE = 6
+PARTICLE_COLOR = "cyan"
 
 # Important variables which should be global in scope.
 Universe = []  # Global because it contains every object in the universe, which needs to be acted on in nearly every function
@@ -80,20 +80,20 @@ def main():
     window = GraphWin(WINDOW_NAME, WINDOW_WIDTH, WINDOW_HEIGHT)
     window.setBackground(WINDOW_COLOR)
 
-    print("Starting simulation. Press a to quit")
+    print("Starting simulation. Close the window to exit the game.")
     global Running
-    while Running:
-        sleep(1/(10*SIM_SPEED))
+    while Running and window.isOpen():
+        sleep(1/SIM_FPS)
         phys_step()
         draw_universe(window)
 
     window.close()
 
-# THIS WORKS!!! AND IT ISN'T A COPYPASTE FROM STACKOVERFLOW!!
-def stop_main(event):
-    global Running
-    Running = False
-keyboard.on_press_key("a", stop_main)
+# Example keyboard listener
+#def stop_main(event):
+#    global Running
+#    Running = False
+#keyboard.on_press_key("a", stop_main)
 
 # Starting/Ending code
 main()
