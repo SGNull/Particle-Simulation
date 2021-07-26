@@ -2,51 +2,58 @@ from graphics import Point, Circle, GraphWin
 import keyboard
 from time import sleep
 from random import random
+from math import floor
 
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
-WINDOW_NAME = "Particle Simulation 0.0.2"
-WINDOW_HEIGHT = 700
-WINDOW_WIDTH = 900
-WINDOW_COLOR = "grey"
+WINDOW_NAME = "Particle Simulation 0.0.4"
+WINDOW_DIMENSIONS = [900,700]
 
 # Universe settings
-SIM_FPS = 20
+SIM_FPS = 30
+BACKGROUND_COLOR = "grey"
+WRAP_AROUND = False
 
 # Particle specific settings
-PARTICLE_COUNT = 30
+PARTICLE_COUNT = 20
 PARTICLE_SPEED = 7
-PARTICLE_SIZE = 6
+PARTICLE_RADIUS = 6
 PARTICLE_COLOR = "cyan"
 
 # Important variables which should be global in scope.
 Universe = []  # Global because it contains every object in the universe, which needs to be acted on in nearly every function
 Running = True   # Global because it controls main, but also needs to be altered by key presses.
 
+# Objects
 class Particle():
     def __init__(self, xPos = 0, yPos = 0) -> None:
         self._pos = [xPos, yPos]
         self._prev = [0,0]
         self._vel = [0,0]
-        self._graphic = Circle(Point(self._pos[0], self._pos[1]), PARTICLE_SIZE)
+        self._graphic = Circle(Point(self._pos[0], self._pos[1]), PARTICLE_RADIUS)
         self._graphic.setFill(PARTICLE_COLOR)
         self._graphic.setOutline(PARTICLE_COLOR)
-        self._drawn = False
+        self._is_drawn = False
 
     def set_velocity(self, deltaX, deltaY):
         self._vel = [deltaX, deltaY]
 
     def phys_update(self):
-        self._pos[0] = (self._pos[0] + self._vel[0]) % WINDOW_WIDTH
-        self._pos[1] = (self._pos[1] + self._vel[1]) % WINDOW_HEIGHT
+        for i in range(2):
+            new_pos = (self._pos[i] + self._vel[i]) % WINDOW_DIMENSIONS[i]
+
+            if not WRAP_AROUND:
+                ratio = (self._pos[i] + self._vel[i]) / WINDOW_DIMENSIONS[i]
+                if floor(ratio) % 2 == 1:
+                    new_pos = WINDOW_DIMENSIONS[i] - new_pos
+                    self._vel[i] = -self._vel[i]
+
+            self._pos[i] = new_pos
 
     def draw(self, window):
-        # I was debating a lot on whether this single-use if-else statement is a good idea. It makes drawing the particles easier, but I was concerned about speed.
-        # It costs us about 0.04 microseconds on average, probably less given predictive branching in the processor (just a guess, not sure how python->machine-code works).
-        # Source: https://stackoverflow.com/questions/2522005/cost-of-exception-handlers-in-python
-        if not self._drawn:
+        if not self._is_drawn:
             self._graphic.draw(window)
-            self._drawn = True
+            self._is_drawn = True
         else:
             self._graphic.move(self._pos[0] - self._prev[0], self._pos[1] - self._prev[1])
 
@@ -54,9 +61,10 @@ class Particle():
         self._prev[1] = self._pos[1]
         
 
+# Functions
 def init_universe():
     for i in range(PARTICLE_COUNT):
-        newParticle = Particle(random()*WINDOW_WIDTH, random()*WINDOW_HEIGHT)
+        newParticle = Particle(random()*WINDOW_DIMENSIONS[0], random()*WINDOW_DIMENSIONS[1])
         newParticle.set_velocity(rand_between(-PARTICLE_SPEED, PARTICLE_SPEED), rand_between(-PARTICLE_SPEED, PARTICLE_SPEED))
         Universe.append(newParticle)
 
@@ -73,14 +81,21 @@ def rand_between(start, end):
     output += start
     return output
 
+def print_info():
+    print("")
+    print(WINDOW_NAME)
+    print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]) + " at " + str(SIM_FPS) + " FPS")
+    print("Particle color: " + PARTICLE_COLOR + ". Background color: " + BACKGROUND_COLOR + ".")
+    print("")
 
+# Main
 def main():
     print("Generating universe...")
     init_universe()
-    window = GraphWin(WINDOW_NAME, WINDOW_WIDTH, WINDOW_HEIGHT)
-    window.setBackground(WINDOW_COLOR)
+    window = GraphWin(WINDOW_NAME, WINDOW_DIMENSIONS[0], WINDOW_DIMENSIONS[1])
+    window.setBackground(BACKGROUND_COLOR)
 
-    print("Starting simulation. Close the window to exit the game.")
+    print("Starting simulation. Close the window to exit the simulation.")
     global Running
     while Running and window.isOpen():
         sleep(1/SIM_FPS)
@@ -96,5 +111,6 @@ def main():
 #keyboard.on_press_key("a", stop_main)
 
 # Starting/Ending code
+print_info()
 main()
 keyboard.unhook_all()
