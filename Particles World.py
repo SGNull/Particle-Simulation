@@ -10,14 +10,14 @@ WINDOW_NAME = "Particle Simulation 0.0.4"
 WINDOW_DIMENSIONS = [900,700]
 
 # Universe settings
-SIM_FPS = 30
-BACKGROUND_COLOR = "grey"
+SIM_DELAY = 0
+BACKGROUND_COLOR = "black"
 WRAP_AROUND = False
 
 # Particle specific settings
-PARTICLE_COUNT = 20
-PARTICLE_SPEED = 7
-PARTICLE_RADIUS = 6
+PARTICLE_COUNT = 220
+PARTICLE_SPEED = 10
+PARTICLE_RADIUS = 5
 PARTICLE_COLOR = "cyan"
 
 # Important variables which should be global in scope.
@@ -39,6 +39,8 @@ class Particle():
         self._vel = [deltaX, deltaY]
 
     def phys_update(self):
+
+        #This goes at the end of any force calculations
         for i in range(2):
             new_pos = (self._pos[i] + self._vel[i]) % WINDOW_DIMENSIONS[i]
 
@@ -84,7 +86,7 @@ def rand_between(start, end):
 def print_info():
     print("")
     print(WINDOW_NAME)
-    print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]) + " at " + str(SIM_FPS) + " FPS")
+    print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]) + " with " + str(SIM_DELAY/1000) + " seconds of extra delay")
     print("Particle color: " + PARTICLE_COLOR + ". Background color: " + BACKGROUND_COLOR + ".")
     print("")
 
@@ -98,7 +100,7 @@ def main():
     print("Starting simulation. Close the window to exit the simulation.")
     global Running
     while Running and window.isOpen():
-        sleep(1/SIM_FPS)
+        sleep(SIM_DELAY/1000)
         phys_step()
         draw_universe(window)
 
