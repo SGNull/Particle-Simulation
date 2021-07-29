@@ -6,24 +6,26 @@ from math import floor, sqrt
 
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
-WINDOW_NAME = "Particle Simulation 0.1.1"
+WINDOW_NAME = "Particle Simulation 0.2.0"
 WINDOW_DIMENSIONS = (900,700)
 
 # Universe settings
 SIM_DELAY_MS = 0
-WRAP_AROUND = False
+WRAP_AROUND = True
+COLOR_COUNT = 3
+FRICTION = 0.1
 
 # Particle specific settings
 PARTICLE_COUNT = 50
-PARTICLE_SPEED = 10
-PARTICLE_RADIUS = 5
+PARTICLE_RADIUS = 3
 
-# Particle interactions settings
-COLOR_COUNT = 3
-MAX_FORCE_STRENGTH = 1
-MAX_NORMAL_FORCE = 3
-FORCE_START_RATIO = 3/4
-FRICTION = 0.9
+# Particle force settings
+MAX_FORCE_STRENGTH = 0.2
+MAX_NORMAL_FORCE = 5
+MIN_FORCE_START = PARTICLE_RADIUS * 1.1
+MAX_FORCE_START = PARTICLE_RADIUS * 2
+MIN_FORCE_DIST = 10
+MAX_FORCE_DIST = 60
 
 #Aesthetics settings
 PARTICLE_COLORS = ["cyan", "red", "yellow", "magenta", "blue", "purple", "green", "orange", "pink", "gray", "brown", "white"]
@@ -33,14 +35,13 @@ PARTICLE_OUTLINE = False
 
 # Important variables which should be global in scope.
 Universe = []
-Interactions_Matrix = []
+Interactions_Matrix = []   # Format: (force_magnitude, force_start, force_length)
 Running = True
 
-# TODO: Rework the force equations.
-# The main component equations for the force
-normal_mult = lambda distance, radius: sqrt(-distance/radius + 1)
-weak_force_mult = lambda distance, radius, ratio: (distance - (radius*ratio))/(radius*(1 - ratio))
-force_mult = lambda distance, radius: 1/(distance - radius + 1)
+# The main component equations for the force, recreated from the image shown in Code Parade's video
+# Desmos graph: https://www.desmos.com/calculator/ubemfmpbg6
+normal_equation = lambda distance, contact_radius: -sqrt(distance)/sqrt(contact_radius) + 1
+force_equation = lambda distance, contact_radius, force_distance: -(2)/distance*abs(distance-contact_radius-force_distance/2) + 1
 
 
 # Objects
@@ -70,20 +71,18 @@ class Particle():
     # Physics
     def interact_with_particle(self, other_particle):   # This has a certain smell to it. It feels like this function might be doing too much. Ex: the if, elif, else statement
         distance = get_particle_distance(self, other_particle)
-        interaction_force = Interactions_Matrix[self._color][other_particle.get_color()]
-
-        if distance <= self._radius * FORCE_START_RATIO:
-            net_force = normal_mult(distance, self._radius) * MAX_NORMAL_FORCE
-        elif distance <= self._radius:
-            net_force = normal_mult(distance, self._radius) * MAX_NORMAL_FORCE + weak_force_mult(distance, self._radius, FORCE_START_RATIO) * interaction_force
-        else:
-            net_force = force_mult(distance, self._radius) * interaction_force
+        interaction = Interactions_Matrix[self._color][other_particle.get_color()]
         
+        if distance < interaction[1]:
+            net_force = MAX_NORMAL_FORCE * normal_equation(distance,interaction[1])
+        else:
+            net_force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
+
         other_pos = other_particle.get_pos()
         norm_vector = ((other_pos[0] - self._pos[0])/distance, (other_pos[1] - self._pos[1])/distance)
 
-        self._vel[0] += norm_vector[0] * net_force
-        self._vel[1] += norm_vector[1] * net_force
+        self._vel[0] += norm_vector[0] * -net_force
+        self._vel[1] += norm_vector[1] * -net_force
 
     def position_update(self):   # This comes after all force calculations
         for i in range(2):
@@ -98,8 +97,8 @@ class Particle():
             self._pos[i] = new_pos
     
     def apply_friction(self):
-        self._vel[0] = self._vel[0]*FRICTION
-        self._vel[1] = self._vel[1]*FRICTION
+        self._vel[0] = self._vel[0]*(1-FRICTION)
+        self._vel[1] = self._vel[1]*(1-FRICTION)
 
     # Graphics
     def draw(self, window):
@@ -115,18 +114,21 @@ class Particle():
 
 # Functions
 rand_mag = lambda x : 2*x*random() - x
+rand_range = lambda start, end: (end-start)*random()+start
 
 def init_universe():
     for i in range(PARTICLE_COUNT):
         newParticle = Particle(random()*WINDOW_DIMENSIONS[0], random()*WINDOW_DIMENSIONS[1], randint(0, COLOR_COUNT - 1))
-        newParticle.set_velocity(rand_mag(PARTICLE_SPEED), rand_mag(PARTICLE_SPEED))
         Universe.append(newParticle)
 
-def init_colorp_field():
+def init_interactions_matrix():
     for i in range(COLOR_COUNT):
         new_row = []
         for j in range(COLOR_COUNT):
-            new_row.append(rand_mag(MAX_FORCE_STRENGTH))
+            force_mag = rand_mag(MAX_FORCE_STRENGTH)
+            force_start = rand_range(MIN_FORCE_START, MAX_FORCE_START)
+            force_distance = rand_range(MIN_FORCE_DIST, MAX_FORCE_DIST)
+            new_row.append((force_mag, force_start, force_distance))
         Interactions_Matrix.append(new_row)
 
 def phys_step():
@@ -134,8 +136,8 @@ def phys_step():
         for bparticle in Universe:
             if aparticle != bparticle:
                 aparticle.interact_with_particle(bparticle)
-        aparticle.apply_friction()
         aparticle.position_update()
+        aparticle.apply_friction()
 
 def draw_universe(window):
     for particle in Universe:
@@ -161,7 +163,7 @@ def main():
 
     print("Generating universe...")
     init_universe()
-    init_colorp_field()
+    init_interactions_matrix()
 
     window = GraphWin(WINDOW_NAME, WINDOW_DIMENSIONS[0], WINDOW_DIMENSIONS[1])
     window.setBackground(BACKGROUND_COLOR)
