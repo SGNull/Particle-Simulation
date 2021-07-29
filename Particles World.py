@@ -38,11 +38,6 @@ Universe = []
 Interactions_Matrix = []   # Format: (force_magnitude, force_start, force_length)
 Running = True
 
-# The main component equations for the force, recreated from the image shown in Code Parade's video
-# Desmos graph: https://www.desmos.com/calculator/ubemfmpbg6
-normal_equation = lambda distance, contact_radius: -sqrt(distance)/sqrt(contact_radius) + 1
-force_equation = lambda distance, contact_radius, force_distance: -(2)/distance*abs(distance-contact_radius-force_distance/2) + 1
-
 
 # Objects
 class Particle():
@@ -69,14 +64,9 @@ class Particle():
         return self._color
 
     # Physics
-    def interact_with_particle(self, other_particle):   # This has a certain smell to it. It feels like this function might be doing too much. Ex: the if, elif, else statement
+    def interact_with_particle(self, other_particle):
         distance = get_particle_distance(self, other_particle)
-        interaction = Interactions_Matrix[self._color][other_particle.get_color()]
-        
-        if distance < interaction[1]:
-            net_force = MAX_NORMAL_FORCE * normal_equation(distance,interaction[1])
-        else:
-            net_force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
+        net_force = get_force(self, other_particle, distance)
 
         other_pos = other_particle.get_pos()
         norm_vector = ((other_pos[0] - self._pos[0])/distance, (other_pos[1] - self._pos[1])/distance)
@@ -115,6 +105,19 @@ class Particle():
 # Functions
 rand_mag = lambda x : 2*x*random() - x
 rand_range = lambda start, end: (end-start)*random()+start
+
+# The main component equations for the force, recreated from the image shown in Code Parade's video
+# Desmos graph: https://www.desmos.com/calculator/ubemfmpbg6
+normal_equation = lambda distance, contact_radius: -sqrt(distance)/sqrt(contact_radius) + 1
+force_equation = lambda distance, contact_radius, force_distance: -(2)/distance*abs(distance-contact_radius-force_distance/2) + 1
+
+def get_force(aparticle, bparticle, distance):
+    interaction = Interactions_Matrix[aparticle.get_color()][bparticle.get_color()]
+    if distance < interaction[1]:
+        force = MAX_NORMAL_FORCE * normal_equation(distance,interaction[1])
+    else:
+        force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
+    return force
 
 def init_universe():
     for i in range(PARTICLE_COUNT):
