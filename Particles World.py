@@ -6,7 +6,7 @@ from math import floor, sqrt
 
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
-WINDOW_NAME = "Particle Simulation 0.1.0"
+WINDOW_NAME = "Particle Simulation 0.1.1"
 WINDOW_DIMENSIONS = (900,700)
 
 # Universe settings
@@ -21,8 +21,9 @@ PARTICLE_RADIUS = 5
 # Particle interactions settings
 COLOR_COUNT = 3
 MAX_FORCE_STRENGTH = 1
-MAX_NORMAL_FORCE = 10
+MAX_NORMAL_FORCE = 3
 FORCE_START_RATIO = 3/4
+FRICTION = 0.9
 
 #Aesthetics settings
 PARTICLE_COLORS = ["cyan", "red", "yellow", "magenta", "blue", "purple", "green", "orange", "pink", "gray", "brown", "white"]
@@ -35,7 +36,8 @@ Universe = []
 Interactions_Matrix = []
 Running = True
 
-# The main component equations for the force (THESE PROBABLY NEED ADJUSTED)
+# TODO: Rework the force equations.
+# The main component equations for the force
 normal_mult = lambda distance, radius: sqrt(-distance/radius + 1)
 weak_force_mult = lambda distance, radius, ratio: (distance - (radius*ratio))/(radius*(1 - ratio))
 force_mult = lambda distance, radius: 1/(distance - radius + 1)
@@ -94,6 +96,10 @@ class Particle():
                     self._vel[i] = -self._vel[i]
 
             self._pos[i] = new_pos
+    
+    def apply_friction(self):
+        self._vel[0] = self._vel[0]*FRICTION
+        self._vel[1] = self._vel[1]*FRICTION
 
     # Graphics
     def draw(self, window):
@@ -128,6 +134,7 @@ def phys_step():
         for bparticle in Universe:
             if aparticle != bparticle:
                 aparticle.interact_with_particle(bparticle)
+        aparticle.apply_friction()
         aparticle.position_update()
 
 def draw_universe(window):
