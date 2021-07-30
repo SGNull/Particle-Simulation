@@ -1,3 +1,5 @@
+VERSION_NUMBER = "0.5.2"
+
 from graphics import Point, Circle, GraphWin
 from time import perf_counter_ns
 from random import random, randint
@@ -6,7 +8,7 @@ import numpy as np
 
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
-WINDOW_NAME = "Particle Simulation 0.5.0"
+WINDOW_NAME = "Particle Simulation " + VERSION_NUMBER
 WINDOW_DIMENSIONS = np.array([1000,800])
 
 # Universe settings
@@ -15,7 +17,7 @@ COLOR_COUNT = 4
 FRICTION = 0.07
 
 # Particle specific settings
-PARTICLE_COUNT = 50
+PARTICLE_COUNT = 80
 PARTICLE_RADIUS = 5
 
 # Particle force settings
