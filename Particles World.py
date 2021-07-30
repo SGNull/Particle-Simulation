@@ -2,30 +2,31 @@ from graphics import Point, Circle, GraphWin
 import keyboard
 from time import sleep
 from random import random, randint
-from math import floor, sqrt
+from math import sqrt
+import numpy as np
 
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
-WINDOW_NAME = "Particle Simulation 0.2.0"
-WINDOW_DIMENSIONS = (900,700)
+WINDOW_NAME = "Particle Simulation 0.4.0"
+WINDOW_DIMENSIONS = np.array([900,700])
 
 # Universe settings
 SIM_DELAY_MS = 0
 WRAP_AROUND = True
 COLOR_COUNT = 3
-FRICTION = 0.1
+FRICTION = 0.05
 
 # Particle specific settings
-PARTICLE_COUNT = 50
+PARTICLE_COUNT = 70
 PARTICLE_RADIUS = 3
 
 # Particle force settings
-MAX_FORCE_STRENGTH = 0.2
-MAX_NORMAL_FORCE = 5
-MIN_FORCE_START = PARTICLE_RADIUS * 1.1
-MAX_FORCE_START = PARTICLE_RADIUS * 2
-MIN_FORCE_DIST = 10
-MAX_FORCE_DIST = 60
+MAX_FORCE_STRENGTH = 0.7
+MAX_NORMAL_FORCE = 10
+MIN_FORCE_START = PARTICLE_RADIUS * 1.6
+MAX_FORCE_START = PARTICLE_RADIUS * 2.3
+MIN_FORCE_DIST = 30
+MAX_FORCE_DIST = 150
 
 #Aesthetics settings
 PARTICLE_COLORS = ["cyan", "red", "yellow", "magenta", "blue", "purple", "green", "orange", "pink", "gray", "brown", "white"]
@@ -42,9 +43,9 @@ Running = True
 # Objects
 class Particle():
     def __init__(self, xPos = 0, yPos = 0, color = 0) -> None:
-        self._pos = [xPos, yPos]
-        self._prev = [0,0]
-        self._vel = [0,0]
+        self._pos = np.array([xPos, yPos])
+        self._prev = np.array([0,0])
+        self._vel = np.array([0,0])
         self._radius = PARTICLE_RADIUS
         self._color = color
         self._graphic = Circle(Point(self._pos[0], self._pos[1]), self._radius)
@@ -65,30 +66,36 @@ class Particle():
 
     # Physics
     def interact_with_particle(self, other_particle):
-        distance = get_particle_distance(self, other_particle)
-        net_force = get_force(self, other_particle, distance)
+        distance_vector = other_particle.get_pos() - self._pos
+        interaction = Interactions_Matrix[self._color][other_particle.get_color()]
 
-        other_pos = other_particle.get_pos()
-        norm_vector = ((other_pos[0] - self._pos[0])/distance, (other_pos[1] - self._pos[1])/distance)
+        if WRAP_AROUND is True:
+            for i, dim in enumerate(distance_vector):
+                if abs(dim) > WINDOW_DIMENSIONS[i]/2:   # If this is true, the other direction is shorter
+                    distance_vector[i] = (WINDOW_DIMENSIONS[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
 
-        self._vel[0] += norm_vector[0] * -net_force
-        self._vel[1] += norm_vector[1] * -net_force
+        distance = mag_of_v(distance_vector)
+        if distance < interaction[1] + interaction[2]:
+            norm_vector = distance_vector/distance
+            if (distance < interaction[1]):
+                net_force = MAX_NORMAL_FORCE * normal_equation(distance,interaction[1])
+            else:
+                net_force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
+
+            self._vel = self._vel - net_force*norm_vector
 
     def position_update(self):   # This comes after all force calculations
-        for i in range(2):
-            new_pos = (self._pos[i] + self._vel[i]) % WINDOW_DIMENSIONS[i]
+        new_pos = np.mod(self._pos + self._vel, WINDOW_DIMENSIONS)
 
-            if not WRAP_AROUND:
-                ratio = (self._pos[i] + self._vel[i]) / WINDOW_DIMENSIONS[i]
-                if floor(ratio) % 2 == 1:
-                    new_pos = WINDOW_DIMENSIONS[i] - new_pos
-                    self._vel[i] = -self._vel[i]
-
-            self._pos[i] = new_pos
+        if not WRAP_AROUND:
+            ratios = (self._pos + self._vel) // WINDOW_DIMENSIONS
+            for i in range(2):
+                if ratios[i] % 2 == 1:
+                    new_pos[i] = WINDOW_DIMENSIONS[i] - new_pos[i]
+        self._pos = new_pos
     
     def apply_friction(self):
-        self._vel[0] = self._vel[0]*(1-FRICTION)
-        self._vel[1] = self._vel[1]*(1-FRICTION)
+        self._vel = self._vel*(1-FRICTION)
 
     # Graphics
     def draw(self, window):
@@ -98,26 +105,19 @@ class Particle():
         else:
             self._graphic.move(self._pos[0] - self._prev[0], self._pos[1] - self._prev[1])
 
-        self._prev[0] = self._pos[0]
-        self._prev[1] = self._pos[1]
+        self._prev = np.copy(self._pos)
 
 
 # Functions
 rand_mag = lambda x : 2*x*random() - x
 rand_range = lambda start, end: (end-start)*random()+start
+sign_of_int = lambda a: int(a>0) - int(a<0)   # SO ref: https://www.quora.com/How-do-I-get-sign-of-integer-in-Python
+mag_of_v = lambda x: sqrt(x[0]**2 + x[1]**2)
 
 # The main component equations for the force, recreated from the image shown in Code Parade's video
 # Desmos graph: https://www.desmos.com/calculator/ubemfmpbg6
 normal_equation = lambda distance, contact_radius: -sqrt(distance)/sqrt(contact_radius) + 1
 force_equation = lambda distance, contact_radius, force_distance: -(2)/distance*abs(distance-contact_radius-force_distance/2) + 1
-
-def get_force(aparticle, bparticle, distance):
-    interaction = Interactions_Matrix[aparticle.get_color()][bparticle.get_color()]
-    if distance < interaction[1]:
-        force = MAX_NORMAL_FORCE * normal_equation(distance,interaction[1])
-    else:
-        force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
-    return force
 
 def init_universe():
     for i in range(PARTICLE_COUNT):
@@ -139,6 +139,7 @@ def phys_step():
         for bparticle in Universe:
             if aparticle != bparticle:
                 aparticle.interact_with_particle(bparticle)
+    for aparticle in Universe:
         aparticle.position_update()
         aparticle.apply_friction()
 
@@ -157,7 +158,7 @@ def print_info():
     print("")
     print(WINDOW_NAME)
     print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]) + " with " + str(SIM_DELAY_MS/1000) + " seconds of extra delay")
-    print("Number of colors: " + str(COLOR_COUNT) + "Background color: " + BACKGROUND_COLOR + ".")
+    print("Number of colors: " + str(COLOR_COUNT) + " Background color: " + BACKGROUND_COLOR + ".")
     print("")
 
 # Main
