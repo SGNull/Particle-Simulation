@@ -1,6 +1,5 @@
 from graphics import Point, Circle, GraphWin
-import keyboard
-from time import sleep
+from time import perf_counter_ns
 from random import random, randint
 from math import sqrt
 import numpy as np
@@ -13,17 +12,17 @@ WINDOW_DIMENSIONS = np.array([1000,800])
 # Universe settings
 WRAP_AROUND = True
 COLOR_COUNT = 4
-FRICTION = 0.05
+FRICTION = 0.07
 
 # Particle specific settings
-PARTICLE_COUNT = 80
+PARTICLE_COUNT = 50
 PARTICLE_RADIUS = 5
 
 # Particle force settings
 MAX_FORCE_STRENGTH = 0.7
 MAX_NORMAL_FORCE = 10
-MIN_FORCE_START = PARTICLE_RADIUS * 2
-MAX_FORCE_START = PARTICLE_RADIUS * 3
+MIN_FORCE_START = PARTICLE_RADIUS * 2.2
+MAX_FORCE_START = PARTICLE_RADIUS * 3.5
 MIN_FORCE_DIST = 30
 MAX_FORCE_DIST = 130
 
@@ -85,8 +84,6 @@ class Particle():
                 if ratios[i] % 2 == 1:
                     new_pos[i] = WINDOW_DIMENSIONS[i] - new_pos[i]
         self.pos = new_pos
-    
-    def apply_friction(self):
         self.vel = self.vel*(1-FRICTION)
 
     # Graphics
@@ -161,7 +158,6 @@ def main():
 
         for particle in Universe:
             particle.position_update()
-            particle.apply_friction()
             particle.draw(window)
     window.close()
 
@@ -173,4 +169,3 @@ def main():
 
 # Code which MUST fall outside of functions
 main()
-keyboard.unhook_all()
