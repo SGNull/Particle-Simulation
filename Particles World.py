@@ -43,33 +43,25 @@ Running = True
 # Objects
 class Particle():
     def __init__(self, xPos = 0, yPos = 0, color = 0) -> None:
-        self._pos = np.array([xPos, yPos])
-        self._prev = np.array([0,0])
-        self._vel = np.array([0,0])
-        self._radius = PARTICLE_RADIUS
-        self._color = color
-        self._graphic = Circle(Point(self._pos[0], self._pos[1]), self._radius)
-        self._graphic.setFill(PARTICLE_COLORS[color])
+        self.pos = np.array([xPos, yPos])
+        self.prev = np.array([0,0])
+        self.vel = np.array([0,0])
+        self.radius = PARTICLE_RADIUS
+        self.color = color
+        self.graphic = Circle(Point(self.pos[0], self.pos[1]), self.radius)
+        self.graphic.setFill(PARTICLE_COLORS[color])
 
         if not PARTICLE_OUTLINE:
-            self._graphic.setOutline(PARTICLE_COLORS[color])
+            self.graphic.setOutline(PARTICLE_COLORS[color])
 
-        self._is_drawn = False
-
-    # Getters and Setters
-    def set_velocity(self, deltaX, deltaY):
-        self._vel = [deltaX, deltaY]
-    def get_pos(self):
-        return self._pos
-    def get_color(self):
-        return self._color
+        self.is_drawn = False
 
     # Physics
     def interact_with_particle(self, other_particle):
-        distance_vector = other_particle.get_pos() - self._pos
-        interaction = Interactions_Matrix[self._color][other_particle.get_color()]
+        distance_vector = other_particle.pos - self.pos
+        interaction = Interactions_Matrix[self.color][other_particle.color]
 
-        if WRAP_AROUND is True:
+        if WRAP_AROUND:
             for i, dim in enumerate(distance_vector):
                 if abs(dim) > WINDOW_DIMENSIONS[i]/2:   # If this is true, the other direction is shorter
                     distance_vector[i] = (WINDOW_DIMENSIONS[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
@@ -82,30 +74,30 @@ class Particle():
             else:
                 net_force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
 
-            self._vel = self._vel - net_force*norm_vector
+            self.vel = self.vel - net_force*norm_vector
 
     def position_update(self):   # This comes after all force calculations
-        new_pos = np.mod(self._pos + self._vel, WINDOW_DIMENSIONS)
+        new_pos = np.mod(self.pos + self.vel, WINDOW_DIMENSIONS)
 
         if not WRAP_AROUND:
-            ratios = (self._pos + self._vel) // WINDOW_DIMENSIONS
+            ratios = (self.pos + self.vel) // WINDOW_DIMENSIONS
             for i in range(2):
                 if ratios[i] % 2 == 1:
                     new_pos[i] = WINDOW_DIMENSIONS[i] - new_pos[i]
-        self._pos = new_pos
+        self.pos = new_pos
     
     def apply_friction(self):
-        self._vel = self._vel*(1-FRICTION)
+        self.vel = self.vel*(1-FRICTION)
 
     # Graphics
     def draw(self, window):
-        if not self._is_drawn:
-            self._graphic.draw(window)
-            self._is_drawn = True
+        if not self.is_drawn:
+            self.graphic.draw(window)
+            self.is_drawn = True
         else:
-            self._graphic.move(self._pos[0] - self._prev[0], self._pos[1] - self._prev[1])
+            self.graphic.move(self.pos[0] - self.prev[0], self.pos[1] - self.prev[1])
 
-        self._prev = np.copy(self._pos)
+        self.prev = np.copy(self.pos)
 
 
 # Functions
@@ -138,13 +130,6 @@ def bake_universe_pie():
     for i in range(len(Universe)):
         for j in range(i +1, len(Universe)):
             Universe_Pie.append((Universe[i],Universe[j]))
-
-def get_particle_distance(aparticle, bparticle):
-    apos = aparticle.get_pos()
-    bpos = bparticle.get_pos()
-    x_dist_squared = (bpos[0] - apos[0])**2
-    y_dist_squared = (bpos[1] - apos[1])**2
-    return sqrt(x_dist_squared + y_dist_squared)
 
 def print_info():
     print("")
