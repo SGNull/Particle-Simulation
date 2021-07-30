@@ -7,26 +7,25 @@ import numpy as np
 
 # TODO: Figure out how to properly add a version number to the document.
 # Window settings
-WINDOW_NAME = "Particle Simulation 0.4.0"
-WINDOW_DIMENSIONS = np.array([900,700])
+WINDOW_NAME = "Particle Simulation 0.5.0"
+WINDOW_DIMENSIONS = np.array([1000,800])
 
 # Universe settings
-SIM_DELAY_MS = 0
 WRAP_AROUND = True
-COLOR_COUNT = 3
+COLOR_COUNT = 4
 FRICTION = 0.05
 
 # Particle specific settings
-PARTICLE_COUNT = 70
-PARTICLE_RADIUS = 3
+PARTICLE_COUNT = 80
+PARTICLE_RADIUS = 5
 
 # Particle force settings
 MAX_FORCE_STRENGTH = 0.7
 MAX_NORMAL_FORCE = 10
-MIN_FORCE_START = PARTICLE_RADIUS * 1.6
-MAX_FORCE_START = PARTICLE_RADIUS * 2.3
+MIN_FORCE_START = PARTICLE_RADIUS * 2
+MAX_FORCE_START = PARTICLE_RADIUS * 3
 MIN_FORCE_DIST = 30
-MAX_FORCE_DIST = 150
+MAX_FORCE_DIST = 130
 
 #Aesthetics settings
 PARTICLE_COLORS = ["cyan", "red", "yellow", "magenta", "blue", "purple", "green", "orange", "pink", "gray", "brown", "white"]
@@ -36,6 +35,7 @@ PARTICLE_OUTLINE = False
 
 # Important variables which should be global in scope.
 Universe = []
+Universe_Pie = []
 Interactions_Matrix = []   # Format: (force_magnitude, force_start, force_length)
 Running = True
 
@@ -134,18 +134,10 @@ def init_interactions_matrix():
             new_row.append((force_mag, force_start, force_distance))
         Interactions_Matrix.append(new_row)
 
-def phys_step():
-    for aparticle in Universe:
-        for bparticle in Universe:
-            if aparticle != bparticle:
-                aparticle.interact_with_particle(bparticle)
-    for aparticle in Universe:
-        aparticle.position_update()
-        aparticle.apply_friction()
-
-def draw_universe(window):
-    for particle in Universe:
-        particle.draw(window)
+def bake_universe_pie():
+    for i in range(len(Universe)):
+        for j in range(i +1, len(Universe)):
+            Universe_Pie.append((Universe[i],Universe[j]))
 
 def get_particle_distance(aparticle, bparticle):
     apos = aparticle.get_pos()
@@ -157,7 +149,7 @@ def get_particle_distance(aparticle, bparticle):
 def print_info():
     print("")
     print(WINDOW_NAME)
-    print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]) + " with " + str(SIM_DELAY_MS/1000) + " seconds of extra delay")
+    print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]))
     print("Number of colors: " + str(COLOR_COUNT) + " Background color: " + BACKGROUND_COLOR + ".")
     print("")
 
@@ -172,13 +164,20 @@ def main():
     window = GraphWin(WINDOW_NAME, WINDOW_DIMENSIONS[0], WINDOW_DIMENSIONS[1])
     window.setBackground(BACKGROUND_COLOR)
 
+    print("Baking a pie...")
+    bake_universe_pie()
+
     print("Starting simulation. Close the window to exit the simulation.")
     global Running
     while Running and window.isOpen():
-        sleep(SIM_DELAY_MS/1000)
-        phys_step()
-        draw_universe(window)
+        for slice in Universe_Pie:
+            slice[0].interact_with_particle(slice[1])
+            slice[1].interact_with_particle(slice[0])
 
+        for particle in Universe:
+            particle.position_update()
+            particle.apply_friction()
+            particle.draw(window)
     window.close()
 
 # Example keyboard listener
