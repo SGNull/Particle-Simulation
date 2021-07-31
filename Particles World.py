@@ -6,10 +6,9 @@ from random import random, randint
 from math import sqrt
 import numpy as np
 
-# TODO: Figure out how to properly add a version number to the document.
 # Window settings
 WINDOW_NAME = "Particle Simulation " + VERSION_NUMBER
-WINDOW_DIMENSIONS = np.array([1000,800])
+WIN_DIM = np.array([1000,800])
 
 # Universe settings
 WRAP_AROUND = True
@@ -64,8 +63,8 @@ class Particle():
 
         if WRAP_AROUND:
             for i, dim in enumerate(distance_vector):
-                if abs(dim) > WINDOW_DIMENSIONS[i]/2:   # If this is true, the other direction is shorter
-                    distance_vector[i] = (WINDOW_DIMENSIONS[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
+                if abs(dim) > WIN_DIM[i]/2:   # If this is true, the other direction is shorter
+                    distance_vector[i] = (WIN_DIM[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
 
         distance = mag_of_v(distance_vector)
         if distance < interaction[1] + interaction[2]:
@@ -78,13 +77,13 @@ class Particle():
             self.vel = self.vel - net_force*norm_vector
 
     def position_update(self):   # This comes after all force calculations
-        new_pos = np.mod(self.pos + self.vel, WINDOW_DIMENSIONS)
+        new_pos = np.mod(self.pos + self.vel, WIN_DIM)
 
         if not WRAP_AROUND:
-            ratios = (self.pos + self.vel) // WINDOW_DIMENSIONS
+            ratios = (self.pos + self.vel) // WIN_DIM
             for i in range(2):
                 if ratios[i] % 2 == 1:
-                    new_pos[i] = WINDOW_DIMENSIONS[i] - new_pos[i]
+                    new_pos[i] = WIN_DIM[i] - new_pos[i]
         self.pos = new_pos
         self.vel = self.vel*(1-FRICTION)
 
@@ -110,9 +109,44 @@ mag_of_v = lambda x: sqrt(x[0]**2 + x[1]**2)
 normal_equation = lambda distance, contact_radius: -sqrt(distance)/sqrt(contact_radius) + 1
 force_equation = lambda distance, contact_radius, force_distance: -(2)/distance*abs(distance-contact_radius-force_distance/2) + 1
 
+def observe_slice(pie_slice):
+    part_a = pie_slice[0]
+    part_b = pie_slice[1]
+
+    dist_vect = part_b.pos - part_a.pos
+    intr_a = Interactions_Matrix[part_a.color][part_b.color]
+    intr_b = Interactions_Matrix[part_b.color][part_a.color]
+
+    if WRAP_AROUND:
+            for i, dim in enumerate(dist_vect):
+                if abs(dim) > WIN_DIM[i]/2:   # If this is true, the other direction is shorter
+                    dist_vect[i] = (WIN_DIM[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
+    
+    distance = mag_of_v(dist_vect)
+
+    if distance < intr_a[1] + intr_a[2]:
+        # Do part_a calculations
+        norm_vect = -dist_vect/distance
+        if (distance < intr_a[1]):
+            force = MAX_NORMAL_FORCE * normal_equation(distance,intr_a[1])
+        else:
+            force = intr_a[0] * force_equation(distance, intr_a[1], intr_a[2])
+        
+        part_a.vel += part_a.vel - force*norm_vect
+
+    if distance < intr_b[1] + intr_b[2]:
+        # Do part_b calculations
+        norm_vect = dist_vect/distance
+        if (distance < intr_b[1]):
+            force = MAX_NORMAL_FORCE * normal_equation(distance,intr_b[1])
+        else:
+            force = intr_b[0] * force_equation(distance, intr_b[1], intr_b[2])
+        
+        part_b.vel += force*norm_vect
+
 def init_universe():
     for i in range(PARTICLE_COUNT):
-        newParticle = Particle(random()*WINDOW_DIMENSIONS[0], random()*WINDOW_DIMENSIONS[1], randint(0, COLOR_COUNT - 1))
+        newParticle = Particle(random()*WIN_DIM[0], random()*WIN_DIM[1], randint(0, COLOR_COUNT - 1))
         Universe.append(newParticle)
 
 def init_interactions_matrix():
@@ -133,7 +167,7 @@ def bake_universe_pie():
 def print_info():
     print("")
     print(WINDOW_NAME)
-    print("Running " + str(WINDOW_DIMENSIONS[0]) + "x" + str(WINDOW_DIMENSIONS[1]))
+    print("Running " + str(WIN_DIM[0]) + "x" + str(WIN_DIM[1]))
     print("Number of colors: " + str(COLOR_COUNT) + " Background color: " + BACKGROUND_COLOR + ".")
     print("")
 
@@ -145,7 +179,7 @@ def main():
     init_universe()
     init_interactions_matrix()
 
-    window = GraphWin(WINDOW_NAME, WINDOW_DIMENSIONS[0], WINDOW_DIMENSIONS[1])
+    window = GraphWin(WINDOW_NAME, WIN_DIM[0], WIN_DIM[1])
     window.setBackground(BACKGROUND_COLOR)
 
     print("Baking a pie...")
