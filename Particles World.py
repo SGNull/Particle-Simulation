@@ -13,19 +13,19 @@ WIN_DIM = np.array([1000,800])
 # Universe settings
 WRAP_AROUND = True
 COLOR_COUNT = 4
-FRICTION = 0.07
+FRICTION = 0.1
 
 # Particle specific settings
 PARTICLE_COUNT = 80
-PARTICLE_RADIUS = 5
+PARTICLE_RADIUS = 5.5
 
 # Particle force settings
-MAX_FORCE_STRENGTH = 0.7
+MAX_FORCE_STRENGTH = 1
 MAX_NORMAL_FORCE = 10
 MIN_FORCE_START = PARTICLE_RADIUS * 2.2
 MAX_FORCE_START = PARTICLE_RADIUS * 3.5
 MIN_FORCE_DIST = 30
-MAX_FORCE_DIST = 130
+MAX_FORCE_DIST = 200
 
 #Aesthetics settings
 PARTICLE_COLORS = ["cyan", "red", "yellow", "magenta", "blue", "purple", "green", "orange", "pink", "gray", "brown", "white"]
@@ -54,8 +54,6 @@ class Particle():
         if not PARTICLE_OUTLINE:
             self.graphic.setOutline(PARTICLE_COLORS[color])
 
-        self.is_drawn = False
-
     # Physics
     def position_update(self):   # This comes after all force calculations
         new_pos = np.mod(self.pos + self.vel, WIN_DIM)
@@ -65,19 +63,15 @@ class Particle():
             for i in range(2):
                 if ratios[i] % 2 == 1:
                     new_pos[i] = WIN_DIM[i] - new_pos[i]
+
         self.pos = new_pos
         self.vel = self.vel*(1-FRICTION)
 
+        self.graphic.move(self.vel[0], self.vel[1])
+
     # Graphics
     def draw(self, window):
-        if not self.is_drawn:
-            self.graphic.draw(window)
-            self.is_drawn = True
-        else:
-            self.graphic.move(self.pos[0] - self.prev[0], self.pos[1] - self.prev[1])
-
-        self.prev = np.copy(self.pos)
-
+        self.graphic.draw(window)
 
 # Functions
 rand_mag = lambda x : 2*x*random() - x
@@ -167,6 +161,10 @@ def main():
     bake_universe_pie()
 
     print("Starting simulation. Close the window to exit the simulation.")
+    
+    for particle in Universe:
+        particle.draw(window)
+
     global Running
     time_start = perf_counter()
     while Running and window.isOpen():
@@ -175,7 +173,7 @@ def main():
 
         for particle in Universe:
             particle.position_update()
-            particle.draw(window)
+
     time_end = perf_counter()
     window.close()
     print("Elapsed time: " + str(time_end - time_start))
