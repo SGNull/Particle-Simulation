@@ -7,7 +7,7 @@ import numpy as np
 # Meta settings
 VERSION_NUMBER = "0.7.0"
 WINDOW_NAME = "Particle Simulation " + VERSION_NUMBER
-WIN_DIM = np.array([900,700])
+WIN_DIM = np.array([800,700])
 TESTING = False
 TEST_STEPS = 100
 
