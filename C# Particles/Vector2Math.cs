@@ -1,3 +1,4 @@
+using Math;
 namespace CSharpParticles{
     public partial class Vector2Math{
         public double[] ScalMult(double[] vect, double scal) {
