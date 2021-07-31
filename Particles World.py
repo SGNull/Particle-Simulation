@@ -1,7 +1,7 @@
-VERSION_NUMBER = "0.5.2"
+VERSION_NUMBER = "0.6.0"
 
 from graphics import Point, Circle, GraphWin
-from time import perf_counter_ns
+from time import perf_counter, perf_counter_ns
 from random import random, randint
 from math import sqrt
 import numpy as np
@@ -57,25 +57,6 @@ class Particle():
         self.is_drawn = False
 
     # Physics
-    def interact_with_particle(self, other_particle):
-        distance_vector = other_particle.pos - self.pos
-        interaction = Interactions_Matrix[self.color][other_particle.color]
-
-        if WRAP_AROUND:
-            for i, dim in enumerate(distance_vector):
-                if abs(dim) > WIN_DIM[i]/2:   # If this is true, the other direction is shorter
-                    distance_vector[i] = (WIN_DIM[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
-
-        distance = mag_of_v(distance_vector)
-        if distance < interaction[1] + interaction[2]:
-            norm_vector = distance_vector/distance
-            if (distance < interaction[1]):
-                net_force = MAX_NORMAL_FORCE * normal_equation(distance,interaction[1])
-            else:
-                net_force = interaction[0] * force_equation(distance, interaction[1], interaction[2])
-
-            self.vel = self.vel - net_force*norm_vector
-
     def position_update(self):   # This comes after all force calculations
         new_pos = np.mod(self.pos + self.vel, WIN_DIM)
 
@@ -132,7 +113,7 @@ def observe_slice(pie_slice):
         else:
             force = intr_a[0] * force_equation(distance, intr_a[1], intr_a[2])
         
-        part_a.vel += part_a.vel - force*norm_vect
+        part_a.vel = part_a.vel + force*norm_vect
 
     if distance < intr_b[1] + intr_b[2]:
         # Do part_b calculations
@@ -142,7 +123,7 @@ def observe_slice(pie_slice):
         else:
             force = intr_b[0] * force_equation(distance, intr_b[1], intr_b[2])
         
-        part_b.vel += force*norm_vect
+        part_b.vel = part_b.vel + force*norm_vect
 
 def init_universe():
     for i in range(PARTICLE_COUNT):
@@ -187,15 +168,17 @@ def main():
 
     print("Starting simulation. Close the window to exit the simulation.")
     global Running
+    time_start = perf_counter()
     while Running and window.isOpen():
         for slice in Universe_Pie:
-            slice[0].interact_with_particle(slice[1])
-            slice[1].interact_with_particle(slice[0])
+            observe_slice(slice)
 
         for particle in Universe:
             particle.position_update()
             particle.draw(window)
+    time_end = perf_counter()
     window.close()
+    print("Elapsed time: " + str(time_end - time_start))
 
 # Example keyboard listener
 #def stop_main(event):
