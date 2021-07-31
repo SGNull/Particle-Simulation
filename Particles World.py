@@ -1,36 +1,37 @@
-VERSION_NUMBER = "0.6.0"
-
 from graphics import Point, Circle, GraphWin
 from time import perf_counter, perf_counter_ns
 from random import random, randint
 from math import sqrt
 import numpy as np
 
-# Window settings
+# Meta settings
+VERSION_NUMBER = "0.7.0"
 WINDOW_NAME = "Particle Simulation " + VERSION_NUMBER
-WIN_DIM = np.array([1000,800])
+WIN_DIM = np.array([900,700])
+TESTING = False
+TEST_STEPS = 100
 
 # Universe settings
 WRAP_AROUND = True
-COLOR_COUNT = 4
-FRICTION = 0.1
+COLOR_COUNT = 3
+FRICTION = 0.10
 
 # Particle specific settings
-PARTICLE_COUNT = 80
-PARTICLE_RADIUS = 5.5
+PARTICLE_COUNT = 100
+PARTICLE_RADIUS = 4
 
 # Particle force settings
-MAX_FORCE_STRENGTH = 1
+MAX_FORCE_STRENGTH = 0.4
 MAX_NORMAL_FORCE = 10
-MIN_FORCE_START = PARTICLE_RADIUS * 2.2
-MAX_FORCE_START = PARTICLE_RADIUS * 3.5
-MIN_FORCE_DIST = 30
-MAX_FORCE_DIST = 200
+MIN_FORCE_START = 13
+MAX_FORCE_START = 13
+MIN_FORCE_DIST = 40
+MAX_FORCE_DIST = 150
 
 #Aesthetics settings
 PARTICLE_COLORS = ["cyan", "red", "yellow", "magenta", "blue", "purple", "green", "orange", "pink", "gray", "brown", "white"]
 BACKGROUND_COLOR = "black"
-PARTICLE_OUTLINE = False
+PARTICLE_FILL = False
 
 
 # Important variables which should be global in scope.
@@ -49,25 +50,23 @@ class Particle():
         self.radius = PARTICLE_RADIUS
         self.color = color
         self.graphic = Circle(Point(self.pos[0], self.pos[1]), self.radius)
-        self.graphic.setFill(PARTICLE_COLORS[color])
-
-        if not PARTICLE_OUTLINE:
-            self.graphic.setOutline(PARTICLE_COLORS[color])
+        self.graphic.setOutline(PARTICLE_COLORS[color])
+        if PARTICLE_FILL:
+            self.graphic.setFill(PARTICLE_COLORS[color])
 
     # Physics
     def position_update(self):   # This comes after all force calculations
         new_pos = np.mod(self.pos + self.vel, WIN_DIM)
 
-        if not WRAP_AROUND:
+        if WRAP_AROUND != True:
             ratios = (self.pos + self.vel) // WIN_DIM
             for i in range(2):
                 if ratios[i] % 2 == 1:
                     new_pos[i] = WIN_DIM[i] - new_pos[i]
 
+        self.graphic.move(new_pos[0] - self.pos[0], new_pos[1] - self.pos[1])
         self.pos = new_pos
         self.vel = self.vel*(1-FRICTION)
-
-        self.graphic.move(self.vel[0], self.vel[1])
 
     # Graphics
     def draw(self, window):
@@ -92,7 +91,7 @@ def observe_slice(pie_slice):
     intr_a = Interactions_Matrix[part_a.color][part_b.color]
     intr_b = Interactions_Matrix[part_b.color][part_a.color]
 
-    if WRAP_AROUND:
+    if WRAP_AROUND == True:
             for i, dim in enumerate(dist_vect):
                 if abs(dim) > WIN_DIM[i]/2:   # If this is true, the other direction is shorter
                     dist_vect[i] = (WIN_DIM[i] - abs(dim)) * sign_of_int(dim)   # Go around the other direction
@@ -167,12 +166,21 @@ def main():
 
     global Running
     time_start = perf_counter()
-    while Running and window.isOpen():
-        for slice in Universe_Pie:
-            observe_slice(slice)
+    if TESTING:
+        for i in range(TEST_STEPS):
+            for slice in Universe_Pie:
+                observe_slice(slice)
 
-        for particle in Universe:
-            particle.position_update()
+            for particle in Universe:
+                particle.position_update()
+
+    else:
+        while Running and window.isOpen():
+            for slice in Universe_Pie:
+                observe_slice(slice)
+
+            for particle in Universe:
+                particle.position_update()
 
     time_end = perf_counter()
     window.close()
